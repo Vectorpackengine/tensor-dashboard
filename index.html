@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAO Subnet Analytics</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: white;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .input-group {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .tao-price {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .tao-price-value {
+            font-size: 1.2em;
+            margin-left: 5px;
+        }
+        
+        #uidInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            outline: none;
+        }
+        
+        #resetButton {
+            padding: 12px 30px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        #resetButton:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        #resetButton:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            padding: 20px;
+        }
+        
+        .filter-container {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .filter-input:focus {
+            border-color: #667eea;
+        }
+        
+        #uidTagFilter {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+        
+        #uidTagFilter:focus {
+            border-color: #20c997;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+        
+        .timestamp-display {
+            padding: 10px 15px;
+            background: #e9ecef;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #495057;
+            white-space: nowrap;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .highlight-match {
+            background: #ffeb3b !important;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        
+        thead {
+            background: #667eea;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        th {
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .coldkey {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: #495057;
+            cursor: pointer;
+            transition: background 0.2s;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .coldkey:hover {
+            background: #f0f0f0;
+        }
+        
+        .coldkey:active {
+            background: #e0e0e0;
+        }
+        
+        .taostats-link {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 2px 6px;
+            font-size: 0.85em;
+            color: #667eea;
+            text-decoration: none;
+            border: 1px solid #667eea;
+            border-radius: 3px;
+            transition: all 0.2s;
+            vertical-align: middle;
+        }
+        
+        .taostats-link:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .hotkey {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: #495057;
+        }
+            font-family: 'Courier New', monospace;
+            font-size: 1.0em;
+            color: #495057;
+            font-weight: bold;
+        }
+        
+        .number {
+            text-align: right;
+        }
+        
+        .alpha-value {
+            line-height: 1.2;
+            font-size: 0.85em;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+        }
+        
+        .error {
+            color: #dc3545;
+            text-align: center;
+            padding: 50px;
+        }
+        
+        /* Color classes for coldkey/axon grouping */
+        .group-color-1 { background-color: #ffebee !important; }
+        .group-color-2 { background-color: #e8f5e8 !important; }
+        .group-color-3 { background-color: #e3f2fd !important; }
+        .group-color-4 { background-color: #fff3e0 !important; }
+        .group-color-5 { background-color: #f3e5f5 !important; }
+        .group-color-6 { background-color: #e0f2f1 !important; }
+        .group-color-7 { background-color: #fce4ec !important; }
+        .group-color-8 { background-color: #f1f8e9 !important; }
+        .group-color-9 { background-color: #e8eaf6 !important; }
+        .group-color-10 { background-color: #fff8e1 !important; }
+        .group-color-11 { background-color: #fafafa !important; }
+        .group-color-12 { background-color: #e4f7f7 !important; }
+        
+        /* Type filter dropdown styling */
+        #typeFilter {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+        
+        #typeFilter option {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 TAO Subnet Metagraph Analytics</h1>
+            <p>Real-time metagraph data from TaoStats API</p>
+            <div class="input-group">
+                <div class="tao-price" id="taoPrice">
+                    TAO: <span class="tao-price-value">Loading...</span>
+                </div>
+                <div class="tao-price" id="alphaPrice">
+                    ALPHA: <span class="tao-price-value">Loading...</span>
+                </div>
+                <input type="number" id="uidInput" placeholder="Enter NetUID (e.g., 70)" value="70" min="1">
+                <button id="resetButton">Reset</button>
+            </div>
+            <div class="nav-links" style="margin-top: 15px;">
+                <a href="analyze.html" target="_blank" style="color: white; text-decoration: none; margin: 0 15px; padding: 8px 16px; border-radius: 4px; background: rgba(255, 255, 255, 0.2); transition: background 0.3s;" onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">🔍 Analyze Duplicates</a>
+                <select id="typeFilter" style="padding: 8px 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.2); color: white; font-size: 0.9em; margin-left: 15px;">
+                    <option value="all">Show All</option>
+                    <option value="validators">Validators Only</option>
+                    <option value="miners" selected>Miners Only</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading" style="display: none;">Loading data...</div>
+        <div class="error" id="error" style="display: none;"></div>
+        
+        <div class="table-container" id="tableContainer" style="display: none;">
+            <div class="filter-container">
+                <input type="text" id="filterInput" class="filter-input" placeholder="Filter table (use comma to separate multiple terms, e.g., 217,220,5FWM...)">
+                <input type="text" id="highlightInput" class="filter-input" placeholder="Highlight rows (use comma to separate multiple terms)">
+                <input type="text" id="uidTagFilter" class="filter-input" placeholder="UID Tag Filter (comma-separated UIDs, e.g., 1,5,10,25)">
+                <div class="timestamp-display" id="timestampDisplay"></div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Type</th>
+                        <th>Rank</th>
+                        <th>UID</th>
+                        <th>Block</th>
+                        <th>Hotkey</th>
+                        <th>Coldkey</th>
+                        <th>Axon</th>
+                        <th class="number">Stake</th>
+                        <th class="number">Consensus</th>
+                        <th class="number">Incentive</th>
+                        <th class="number">Dividends</th>
+                        <th class="number">Emission</th>
+                        <th class="number">Alpha Value</th>
+                        <th class="number">Epoch Reward</th>
+                        <th class="number">Daily Reward</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to store prices
+        let globalAlphaPrice = 0; // in TAO units
+        let globalTaoPrice = 0; // in USD
+        let currentTypeFilter = 'miners'; // 'all', 'validators', 'miners' - default to miners
+
+        function filterDataByType(data) {
+            if (currentTypeFilter === 'all') {
+                return data;
+            } else if (currentTypeFilter === 'validators') {
+                return data.filter(item => item.validator_permit === true);
+            } else if (currentTypeFilter === 'miners') {
+                return data.filter(item => item.validator_permit === false);
+            }
+            return data;
+        }
+
+        async function fetchTaoPrice() {
+            try {
+                // Add timestamp to prevent caching
+                const response = await fetch(`/api/tao-price?t=${Date.now()}`);
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        console.log('Rate limit hit for TAO price');
+                        document.querySelector('#taoPrice .tao-price-value').textContent = 'Rate limited';
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const result = await response.json();
+                
+                // Update price display - data is in result.data[0].price
+                const priceElement = document.querySelector('#taoPrice .tao-price-value');
+                if (result && result.data && result.data.length > 0 && result.data[0].price) {
+                    const taoPrice = parseFloat(result.data[0].price);
+                    globalTaoPrice = taoPrice; // Store globally for USD calculations
+                    priceElement.textContent = `$${taoPrice.toFixed(2)}`;
+                } else {
+                    priceElement.textContent = 'N/A';
+                    globalTaoPrice = 0;
+                }
+            } catch (error) {
+                console.error('Error fetching TAO price:', error);
+                document.querySelector('#taoPrice .tao-price-value').textContent = 'Error';
+                globalTaoPrice = 0;
+            }
+        }
+
+        async function fetchAlphaPrice(netuid = 70) {
+            try {
+                // Add timestamp to prevent caching
+                const response = await fetch(`/api/alpha-price/${netuid}?t=${Date.now()}`);
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        console.log('Rate limit hit for Alpha price');
+                        document.querySelector('#alphaPrice .tao-price-value').textContent = 'Rate limited';
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const result = await response.json();
+                
+                // Update alpha price display (price is in TAO units, not USD)
+                const alphaElement = document.querySelector('#alphaPrice .tao-price-value');
+                if (result && result.data && result.data.length > 0) {
+                    // The price is in TAO units
+                    const poolData = result.data[0];
+                    const price = parseFloat(poolData.price);
+                    globalAlphaPrice = price; // Store globally for table calculations
+                    alphaElement.textContent = `${price.toFixed(6)} TAO`; // Show as TAO, not USD
+                } else {
+                    alphaElement.textContent = 'N/A';
+                    globalAlphaPrice = 0;
+                }
+            } catch (error) {
+                console.error('Error fetching Alpha price:', error);
+                document.querySelector('#alphaPrice .tao-price-value').textContent = 'Error';
+                globalAlphaPrice = 0;
+            }
+        }
+
+        async function fetchData() {
+            console.log('fetchData called');
+            const netuid = document.getElementById('uidInput').value;
+            console.log('NetUID:', netuid);
+            
+            if (!netuid) {
+                alert('Please enter a NetUID');
+                return;
+            }
+
+            // Show loading, hide error and table
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('tableContainer').style.display = 'none';
+
+            try {
+                console.log('Fetching prices...');
+                // Refresh both TAO and Alpha prices when Show Data is clicked
+                await Promise.all([
+                    fetchTaoPrice(),
+                    fetchAlphaPrice(netuid)
+                ]);
+                
+                console.log('Fetching metagraph data...');
+                // Fetch metagraph data with cache-busting
+                const metagraphResponse = await fetch(`/api/metagraph/${netuid}?t=${Date.now()}`);
+
+                if (!metagraphResponse.ok) {
+                    if (metagraphResponse.status === 429) {
+                        throw new Error('Too many requests. Please wait a moment and try again.');
+                    }
+                    throw new Error(`HTTP error! status: ${metagraphResponse.status}`);
+                }
+
+                const result = await metagraphResponse.json();
+                console.log('Metagraph data received:', result);
+                
+                // Extract the metagraph data from the response
+                const data = result.data || result;
+                console.log('Extracted data length:', data?.length);
+                
+                if (!data || !Array.isArray(data) || data.length === 0) {
+                    throw new Error('No data received from API');
+                }
+                
+                // Record fetch timestamp
+                const fetchTime = new Date();
+                
+                // Save to localStorage
+                localStorage.setItem('subnetData', JSON.stringify(data));
+                localStorage.setItem('subnetUID', netuid);
+                localStorage.setItem('fetchTimestamp', fetchTime.toISOString());
+                
+                console.log('Displaying data...');
+                // Display data
+                displayData(data, fetchTime);
+            } catch (error) {
+                console.error('Error in fetchData:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = `Error loading data: ${error.message}`;
+            }
+        }
+
+        function displayData(data, fetchTime = null) {
+            console.log('displayData called with data length:', data?.length);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('tableContainer').style.display = 'block';
+
+            // Display timestamp
+            const timestampElement = document.getElementById('timestampDisplay');
+            if (fetchTime) {
+                timestampElement.textContent = `Last updated: ${fetchTime.toLocaleString()}`;
+            } else {
+                // Try to get from localStorage if not provided
+                const savedTimestamp = localStorage.getItem('fetchTimestamp');
+                if (savedTimestamp) {
+                    const savedTime = new Date(savedTimestamp);
+                    timestampElement.textContent = `Last updated: ${savedTime.toLocaleString()}`;
+                } else {
+                    timestampElement.textContent = 'Last updated: Unknown';
+                }
+            }
+
+            // Sort by incentive (highest first) - convert string to number for sorting
+            data.sort((a, b) => parseFloat(b.incentive) - parseFloat(a.incentive));
+
+            // Apply type filter
+            const filteredData = filterDataByType(data);
+
+            // Assign original ranks based on filtered data
+            filteredData.forEach((item, index) => {
+                item.originalRank = parseFloat(item.incentive) > 0 ? index + 1 : 'NaN';
+            });
+
+            // Store both original and filtered data globally
+            window.originalTableData = data;
+            window.tableData = filteredData;
+            console.log('Data stored globally, length:', window.tableData?.length);
+
+            // Render table
+            renderTable(filteredData);
+            console.log('Table rendered');
+
+            // Setup filter and highlight with state persistence
+            document.getElementById('filterInput').addEventListener('input', (e) => {
+                localStorage.setItem('filterInput', e.target.value);
+                filterTable();
+            });
+            document.getElementById('highlightInput').addEventListener('input', (e) => {
+                localStorage.setItem('highlightInput', e.target.value);
+                highlightTable();
+            });
+            document.getElementById('uidTagFilter').addEventListener('input', (e) => {
+                localStorage.setItem('uidTagFilter', e.target.value);
+                applyUidTagFilter();
+            });
+            console.log('Event listeners set up');
+        }
+
+        function renderTable(data, uidFilteredCount = 0) {
+            const highlightValue = document.getElementById('highlightInput')?.value.toLowerCase() || '';
+            const highlightTerms = highlightValue ? highlightValue.split(',').map(term => term.trim()).filter(term => term) : [];
+            
+            const filterValue = document.getElementById('filterInput').value.toLowerCase();
+            const filterTerms = filterValue ? filterValue.split(',').map(term => term.trim()).filter(term => term) : [];
+            
+            // Create color mappings for coldkeys and axon IPs
+            const coldkeyGroups = new Map();
+            const axonGroups = new Map();
+            let colorIndex = 1;
+            
+            // First pass: identify unique coldkeys and axon IPs
+            data.forEach(item => {
+                const coldkey = item.coldkey?.ss58 || item.coldkey || '';
+                const axonIp = item.axon ? item.axon.ip : '';
+                
+                if (coldkey && !coldkeyGroups.has(coldkey)) {
+                    coldkeyGroups.set(coldkey, `group-color-${colorIndex}`);
+                    colorIndex = (colorIndex % 12) + 1;
+                }
+                
+                if (axonIp && axonIp !== 'N/A' && !axonGroups.has(axonIp)) {
+                    axonGroups.set(axonIp, `group-color-${colorIndex}`);
+                    colorIndex = (colorIndex % 12) + 1;
+                }
+            });
+            
+            // Populate table
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = data.map((item, index) => {
+                // Extract hotkey and coldkey ss58 addresses
+                const hotkey = item.hotkey?.ss58 || item.hotkey || '';
+                const coldkey = item.coldkey?.ss58 || item.coldkey || '';
+                
+                // Extract axon information
+                const axonInfo = item.axon ? `${item.axon.ip}:${item.axon.port}` : 'N/A';
+
+                // Check if row matches filter criteria
+                const isFiltered = filterTerms.length > 0 && filterTerms.some(term => {
+                    const emission = parseFloat(item.emission) / 1e9;
+                    const alphaValueTao = globalAlphaPrice * emission;
+                    const alphaValueUsd = alphaValueTao * globalTaoPrice;
+                    return (
+                        item.uid.toString().includes(term) ||
+                        item.block_number.toString().includes(term) ||
+                        hotkey.toLowerCase().includes(term) ||
+                        coldkey.toLowerCase().includes(term) ||
+                        axonInfo.toLowerCase().includes(term) ||
+                        item.stake.toString().includes(term) ||
+                        item.trust.toString().includes(term) ||
+                        item.validator_trust.toString().includes(term) ||
+                        item.consensus.toString().includes(term) ||
+                        item.incentive.toString().includes(term) ||
+                        item.dividends.toString().includes(term) ||
+                        item.emission.toString().includes(term) ||
+                        alphaValueTao.toFixed(6).includes(term) ||
+                        alphaValueUsd.toFixed(4).includes(term)
+                    );
+                });
+
+                // Check if row matches highlight criteria (any term)
+                const shouldHighlight = highlightTerms.length > 0 && highlightTerms.some(term => {
+                    const emission = parseFloat(item.emission) / 1e9;
+                    const alphaValueTao = globalAlphaPrice * emission;
+                    const alphaValueUsd = alphaValueTao * globalTaoPrice;
+                    return (
+                        item.uid.toString().includes(term) ||
+                        item.block_number.toString().includes(term) ||
+                        hotkey.toLowerCase().includes(term) ||
+                        coldkey.toLowerCase().includes(term) ||
+                        axonInfo.toLowerCase().includes(term) ||
+                        item.stake.toString().includes(term) ||
+                        item.trust.toString().includes(term) ||
+                        item.validator_trust.toString().includes(term) ||
+                        item.consensus.toString().includes(term) ||
+                        item.incentive.toString().includes(term) ||
+                        item.dividends.toString().includes(term) ||
+                        item.emission.toString().includes(term) ||
+                        alphaValueTao.toFixed(6).includes(term) ||
+                        alphaValueUsd.toFixed(4).includes(term)
+                    );
+                });
+
+                // Check if this is a UID-filtered item (appears in the first uidFilteredCount items)
+                const isUidFiltered = index < uidFilteredCount;
+
+                // Determine color grouping based on coldkey or axon IP
+                // (reuse coldkey and axonInfo already declared above)
+                const axonIp = item.axon ? item.axon.ip : '';
+                let groupColorClass = '';
+                
+                // Check for coldkey grouping first (higher priority)
+                if (coldkey && coldkeyGroups.has(coldkey)) {
+                    // Count how many items share this coldkey
+                    const coldkeyCount = data.filter(d => (d.coldkey?.ss58 || d.coldkey || '') === coldkey).length;
+                    if (coldkeyCount > 1) {
+                        groupColorClass = coldkeyGroups.get(coldkey);
+                    }
+                }
+                // If no coldkey grouping, check axon IP grouping
+                else if (axonIp && axonIp !== 'N/A' && axonGroups.has(axonIp)) {
+                    const axonCount = data.filter(d => d.axon && d.axon.ip === axonIp).length;
+                    if (axonCount > 1) {
+                        groupColorClass = axonGroups.get(axonIp);
+                    }
+                }
+
+                // Determine row class - priority order: UID filtered > general filtered > highlighted > group color > emission
+                let rowClass = '';
+                if (isUidFiltered) {
+                    rowClass = 'highlight-match'; // UID filtered items get highest priority
+                } else if (isFiltered) {
+                    rowClass = 'highlight-match';
+                } else if (shouldHighlight) {
+                    rowClass = 'highlight-match';
+                } else if (groupColorClass) {
+                    rowClass = groupColorClass; // Color grouping for same coldkey/axon
+                } else if (parseFloat(item.emission) > 0) {
+                    rowClass = 'highlight';
+                }
+
+                // Format emission (convert from wei-like units to readable format)
+                const emission = parseFloat(item.emission) / 1e9; // Convert from nano units
+                
+                // Calculate alpha value (alpha price in TAO * emission in TAO = TAO value)
+                const alphaValueTao = globalAlphaPrice * emission;
+                // Convert to USD (alpha value in TAO * TAO price in USD = USD value)
+                const alphaValueUsd = alphaValueTao * globalTaoPrice;
+
+                // Calculate epoch reward (emission * alpha price in TAO)
+                const epochReward = emission * globalAlphaPrice;
+                const epochRewardDisplay = globalAlphaPrice > 0 
+                    ? `${epochReward.toFixed(4)} TAO`
+                    : 'N/A';
+
+                // Calculate daily reward (epoch reward * 20)
+                const dailyReward = epochReward * 20;
+                const dailyRewardDisplay = globalAlphaPrice > 0 
+                    ? `${dailyReward.toFixed(4)} TAO`
+                    : 'N/A';
+
+                // Determine type icon based on validator_permit and immunity period
+                let typeIcon;
+                if (item.validator_permit === true) {
+                    typeIcon = '<span style="color: #ffd700;">🛡</span>'; // Yellow shield for validators
+                } else if (item.is_immunity_period === true) {
+                    typeIcon = '<span style="color: #ffd700;">⛏</span>'; // Yellow pickaxe for miners in immunity period
+                } else {
+                    typeIcon = '<span style="color: #007bff;">⛏</span>'; // Blue pickaxe for regular miners
+                }
+
+                return `
+                <tr class="${rowClass}">
+                    <td>${index + 1}</td>
+                    <td style="text-align: center; font-size: 1.2em;">${typeIcon}</td>
+                    <td>${item.originalRank}</td>
+                    <td>${item.uid}</td>
+                    <td>${item.block_number}</td>
+                    <td class="hotkey">${hotkey}</td>
+                    <td class="coldkey" onclick="copyToClipboard('${coldkey}', this)" title="Click to copy">
+                        ${coldkey}
+                        <a href="https://dash.taostats.io/mining/${coldkey}" target="_blank" class="taostats-link" onclick="event.stopPropagation()" title="View on Taostats">🔗</a>
+                    </td>
+                    <td class="axon">${axonInfo}</td>
+                    <td class="number">${parseFloat(item.stake).toFixed(4)}</td>
+                    <td class="number">${parseFloat(item.consensus).toFixed(4)}</td>
+                    <td class="number">${parseFloat(item.incentive).toFixed(4)}</td>
+                    <td class="number">${parseFloat(item.dividends).toFixed(4)}</td>
+                    <td class="number">${emission.toFixed(4)}</td>
+                    <td class="number alpha-value">${alphaValueTao.toFixed(6)} TAO<br>$${alphaValueUsd.toFixed(4)}</td>
+                    <td class="number">${epochRewardDisplay}</td>
+                    <td class="number">${dailyRewardDisplay}</td>
+                </tr>
+            `}).join('');
+        }
+
+        function applyTypeFilter() {
+            if (!window.originalTableData) return;
+            
+            // Apply type filter to original data
+            const filteredData = filterDataByType(window.originalTableData);
+            
+            // Re-assign ranks based on filtered data
+            filteredData.forEach((item, index) => {
+                item.originalRank = parseFloat(item.incentive) > 0 ? index + 1 : 'NaN';
+            });
+            
+            // Update global filtered data
+            window.tableData = filteredData;
+            
+            // Clear existing filters and re-render
+            if (document.getElementById('filterInput')) {
+                document.getElementById('filterInput').value = '';
+            }
+            if (document.getElementById('highlightInput')) {
+                document.getElementById('highlightInput').value = '';
+            }
+            if (document.getElementById('uidTagFilter')) {
+                document.getElementById('uidTagFilter').value = '';
+            }
+            
+            // Clear localStorage for filters
+            localStorage.removeItem('filterInput');
+            localStorage.removeItem('highlightInput');
+            localStorage.removeItem('uidTagFilter');
+            
+            // Re-render table
+            renderTable(filteredData);
+        }
+
+        function applyUidTagFilter() {
+            const uidTagValue = document.getElementById('uidTagFilter').value.trim();
+            
+            if (!uidTagValue) {
+                // If no UID filter, show all data with current filters
+                filterTable();
+                return;
+            }
+
+            // Parse comma-separated UIDs
+            const targetUids = uidTagValue.split(',')
+                .map(uid => uid.trim())
+                .filter(uid => uid && !isNaN(uid))
+                .map(uid => parseInt(uid));
+
+            if (targetUids.length === 0) {
+                filterTable();
+                return;
+            }
+
+            // Separate filtered UIDs and remaining data
+            const filteredData = [];
+            const remainingData = [];
+
+            window.tableData.forEach(item => {
+                if (targetUids.includes(parseInt(item.uid))) {
+                    filteredData.push(item);
+                } else {
+                    remainingData.push(item);
+                }
+            });
+
+            // Sort filtered data by rank (originalRank which is based on incentive)
+            filteredData.sort((a, b) => {
+                // Handle NaN ranks (put them at the end)
+                if (a.originalRank === 'NaN' && b.originalRank === 'NaN') return 0;
+                if (a.originalRank === 'NaN') return 1;
+                if (b.originalRank === 'NaN') return -1;
+                return a.originalRank - b.originalRank;
+            });
+
+            // Combine filtered data at top, then remaining data
+            const combinedData = [...filteredData, ...remainingData];
+            
+            // Render the combined data
+            renderTable(combinedData, filteredData.length);
+        }
+
+        function highlightTable() {
+            const filterValue = document.getElementById('filterInput').value.toLowerCase();
+            const uidTagValue = document.getElementById('uidTagFilter').value.trim();
+            
+            if (!filterValue && !uidTagValue) {
+                renderTable(window.tableData);
+            } else {
+                // Re-apply filters with new highlight
+                if (uidTagValue) {
+                    applyUidTagFilter();
+                } else {
+                    filterTable();
+                }
+            }
+        }
+
+        function filterTable() {
+            const filterValue = document.getElementById('filterInput').value.toLowerCase();
+            const uidTagValue = document.getElementById('uidTagFilter').value.trim();
+            
+            // Start with all data
+            let dataToProcess = window.tableData;
+            let uidFilteredData = [];
+            let remainingData = [];
+            
+            // Apply UID tag filter first if specified
+            if (uidTagValue) {
+                const targetUids = uidTagValue.split(',')
+                    .map(uid => uid.trim())
+                    .filter(uid => uid && !isNaN(uid))
+                    .map(uid => parseInt(uid));
+                
+                if (targetUids.length > 0) {
+                    // Separate UID-filtered items and remaining items
+                    window.tableData.forEach(item => {
+                        if (targetUids.includes(parseInt(item.uid))) {
+                            uidFilteredData.push(item);
+                        } else {
+                            remainingData.push(item);
+                        }
+                    });
+                    
+                    // Sort UID-filtered data by filter order
+                    uidFilteredData.sort((a, b) => {
+                        const aIndex = targetUids.indexOf(parseInt(a.uid));
+                        const bIndex = targetUids.indexOf(parseInt(b.uid));
+                        return aIndex - bIndex;
+                    });
+                    
+                    // Combine for processing
+                    dataToProcess = [...uidFilteredData, ...remainingData];
+                }
+            }
+            
+            if (!filterValue) {
+                renderTable(dataToProcess, uidFilteredData.length);
+                return;
+            }
+
+            // Split by comma and trim whitespace
+            const filterTerms = filterValue.split(',').map(term => term.trim()).filter(term => term);
+
+            // Separate matched and unmatched items
+            const matchedData = [];
+            const unmatchedData = [];
+
+            dataToProcess.forEach(item => {
+                // Extract hotkey and coldkey ss58 addresses
+                const hotkey = item.hotkey?.ss58 || item.hotkey || '';
+                const coldkey = item.coldkey?.ss58 || item.coldkey || '';
+                const axonInfo = item.axon ? `${item.axon.ip}:${item.axon.port}` : 'N/A';
+                const emission = parseFloat(item.emission) / 1e9;
+                const alphaValueTao = globalAlphaPrice * emission;
+                const alphaValueUsd = alphaValueTao * globalTaoPrice;
+                
+                const isMatch = filterTerms.some(term => {
+                    return (
+                        item.uid.toString().includes(term) ||
+                        item.block_number.toString().includes(term) ||
+                        hotkey.toLowerCase().includes(term) ||
+                        coldkey.toLowerCase().includes(term) ||
+                        axonInfo.toLowerCase().includes(term) ||
+                        item.stake.toString().includes(term) ||
+                        item.trust.toString().includes(term) ||
+                        item.validator_trust.toString().includes(term) ||
+                        item.consensus.toString().includes(term) ||
+                        item.incentive.toString().includes(term) ||
+                        item.dividends.toString().includes(term) ||
+                        item.emission.toString().includes(term) ||
+                        alphaValueTao.toFixed(6).includes(term) ||
+                        alphaValueUsd.toFixed(4).includes(term)
+                    );
+                });
+
+                if (isMatch) {
+                    matchedData.push(item);
+                } else {
+                    unmatchedData.push(item);
+                }
+            });
+
+            // Render with matched items first, then unmatched
+            renderTable([...matchedData, ...unmatchedData], Math.max(uidFilteredData.length, matchedData.length));
+        }
+
+        // Load fresh data on page load while preserving all filter states
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Restore saved UID first
+                const savedUID = localStorage.getItem('subnetUID');
+                const currentNetuid = savedUID || '70';
+                
+                // Restore saved type filter
+                const savedTypeFilter = localStorage.getItem('typeFilter');
+                if (savedTypeFilter) {
+                    currentTypeFilter = savedTypeFilter;
+                    document.getElementById('typeFilter').value = savedTypeFilter;
+                }
+                
+                // Always fetch fresh TAO and Alpha prices
+                await Promise.all([
+                    fetchTaoPrice(),
+                    fetchAlphaPrice(currentNetuid)
+                ]);
+                
+                // Restore all saved filter states
+                const savedFilterInput = localStorage.getItem('filterInput');
+                const savedHighlightInput = localStorage.getItem('highlightInput');
+                const savedUidTagFilter = localStorage.getItem('uidTagFilter');
+                
+                // Restore input values
+                if (savedUID) {
+                    document.getElementById('uidInput').value = savedUID;
+                } else {
+                    document.getElementById('uidInput').value = '70';
+                }
+                
+                // Automatically fetch fresh data for the current UID
+                await fetchData();
+                
+                // Restore filter values after data is loaded and table is displayed
+                setTimeout(() => {
+                    if (savedFilterInput && document.getElementById('filterInput')) {
+                        document.getElementById('filterInput').value = savedFilterInput;
+                    }
+                    
+                    if (savedHighlightInput && document.getElementById('highlightInput')) {
+                        document.getElementById('highlightInput').value = savedHighlightInput;
+                    }
+                    
+                    if (savedUidTagFilter && document.getElementById('uidTagFilter')) {
+                        document.getElementById('uidTagFilter').value = savedUidTagFilter;
+                    }
+                    
+                    // Apply the restored filters
+                    if (savedUidTagFilter) {
+                        applyUidTagFilter();
+                    } else if (savedFilterInput) {
+                        filterTable();
+                    } else if (savedHighlightInput) {
+                        highlightTable();
+                    }
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error during page load:', error);
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = `Error loading page: ${error.message}`;
+            }
+        });
+
+        function resetAllFields() {
+            console.log('Reset button clicked');
+            
+            // Clear all filter inputs
+            if (document.getElementById('filterInput')) {
+                document.getElementById('filterInput').value = '';
+            }
+            if (document.getElementById('highlightInput')) {
+                document.getElementById('highlightInput').value = '';
+            }
+            if (document.getElementById('uidTagFilter')) {
+                document.getElementById('uidTagFilter').value = '';
+            }
+            
+            // Reset type filter to default (miners)
+            currentTypeFilter = 'miners';
+            document.getElementById('typeFilter').value = 'miners';
+            
+            // Clear localStorage for filters
+            localStorage.removeItem('filterInput');
+            localStorage.removeItem('highlightInput');
+            localStorage.removeItem('uidTagFilter');
+            localStorage.removeItem('typeFilter');
+            
+            // Reset UID to default
+            document.getElementById('uidInput').value = '70';
+            localStorage.setItem('subnetUID', '70');
+            
+            // Re-apply type filter and render table
+            if (window.originalTableData) {
+                applyTypeFilter();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('resetButton').addEventListener('click', resetAllFields);
+        document.getElementById('uidInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                fetchData();
+            }
+        });
+        document.getElementById('uidInput').addEventListener('input', (e) => {
+            localStorage.setItem('subnetUID', e.target.value);
+        });
+        
+        // Type filter event listener
+        document.getElementById('typeFilter').addEventListener('change', (e) => {
+            currentTypeFilter = e.target.value;
+            localStorage.setItem('typeFilter', currentTypeFilter);
+            applyTypeFilter();
+        });
+
+        // Copy to clipboard function
+        function copyToClipboard(text, element) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalBg = element.style.background;
+                element.style.background = '#28a745';
+                element.style.color = 'white';
+                setTimeout(() => {
+                    element.style.background = originalBg;
+                    element.style.color = '';
+                }, 500);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                const originalBg = element.style.background;
+                element.style.background = '#dc3545';
+                element.style.color = 'white';
+                setTimeout(() => {
+                    element.style.background = originalBg;
+                    element.style.color = '';
+                }, 500);
+            });
+        }
+    </script>
+</body>
+</html>

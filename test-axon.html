@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Axon Column Test</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        .axon {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: #495057;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Axon Column Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Test axon data extraction
+        const testItem = {
+            axon: {
+                ip: "167.150.153.70",
+                port: 8091,
+                protocol: 4,
+                version: 9009000
+            }
+        };
+        
+        const axonInfo = testItem.axon ? `${testItem.axon.ip}:${testItem.axon.port}` : 'N/A';
+        
+        document.getElementById('results').innerHTML = `
+            <p>Test Axon Data:</p>
+            <div class="axon">
+                IP: ${testItem.axon.ip}<br>
+                Port: ${testItem.axon.port}<br>
+                Combined: ${axonInfo}
+            </div>
+        `;
+    </script>
+</body>
+</html>

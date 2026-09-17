@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dual Currency Alpha Value Test</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        .alpha-value {
+            line-height: 1.2;
+            font-size: 0.85em;
+            text-align: right;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dual Currency Alpha Value Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Test the dual currency calculation
+        const globalAlphaPrice = 0.004803; // Alpha price in TAO
+        const globalTaoPrice = 450.25; // TAO price in USD
+        const testEmission = 1000000000; // 1 TAO in nano units
+        
+        const emission = parseFloat(testEmission) / 1e9; // Convert to TAO
+        const alphaValueTao = globalAlphaPrice * emission;
+        const alphaValueUsd = alphaValueTao * globalTaoPrice;
+        
+        document.getElementById('results').innerHTML = `
+            <p>Alpha Price: ${globalAlphaPrice.toFixed(6)} TAO</p>
+            <p>TAO Price: $${globalTaoPrice.toFixed(2)}</p>
+            <p>Emission: ${emission.toFixed(4)} TAO</p>
+            <div class="alpha-value">
+                Alpha Value:<br>
+                ${alphaValueTao.toFixed(6)} TAO<br>
+                $${alphaValueUsd.toFixed(4)}
+            </div>
+        `;
+    </script>
+</body>
+</html>

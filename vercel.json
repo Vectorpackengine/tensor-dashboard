@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/tao-price", "destination": "/api/tao-price" },
+    { "source": "/api/alpha-price/:netuid", "destination": "/api/alpha-price/[netuid]?netuid=:netuid" },
+    { "source": "/api/metagraph/:netuid", "destination": "/api/metagraph/[netuid]?netuid=:netuid" },
+    { "source": "/", "destination": "/index.html" }
+  ]
+}

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polkadot.js Subnet Data Example</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        input, button {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        .data-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+        }
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Polkadot.js Subnet Data Fetcher</h1>
+        
+        <div class="info-box">
+            <strong>Note:</strong> This example connects directly to a Bittensor/Subtensor node using Polkadot.js library.
+            You'll need a running node endpoint (local or remote).
+        </div>
+
+        <div class="controls">
+            <input type="text" id="wsEndpoint" placeholder="WebSocket endpoint" value="wss://entrypoint-finney.opentensor.ai:443">
+            <input type="number" id="netuidInput" placeholder="NetUID" value="70" min="0">
+            <button id="connectBtn">Connect & Fetch Data</button>
+        </div>
+
+        <div id="status"></div>
+        <div class="data-display" id="dataDisplay"></div>
+    </div>
+
+    <!-- Load Polkadot.js using ES modules -->
+    <script type="module">
+        import { ApiPromise, WsProvider } from 'https://cdn.jsdelivr.net/npm/@polkadot/api@11.3.1/+esm';
+        
+        let api = null;
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        function displayData(title, data) {
+            const display = document.getElementById('dataDisplay');
+            const section = document.createElement('div');
+            section.innerHTML = `<h3>${title}</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            display.appendChild(section);
+        }
+
+        async function connectAndFetch() {
+            const wsEndpoint = document.getElementById('wsEndpoint').value;
+            const netuid = parseInt(document.getElementById('netuidInput').value);
+            const connectBtn = document.getElementById('connectBtn');
+            const dataDisplay = document.getElementById('dataDisplay');
+
+            if (!wsEndpoint) {
+                showStatus('Please enter a WebSocket endpoint', 'error');
+                return;
+            }
+
+            try {
+                connectBtn.disabled = true;
+                dataDisplay.innerHTML = '';
+                showStatus('Connecting to node...', 'info');
+
+                // Create API instance
+                const wsProvider = new WsProvider(wsEndpoint);
+                api = await ApiPromise.create({ 
+                    provider: wsProvider,
+                    noInitWarn: true
+                });
+
+                await api.isReady;
+                showStatus('Connected! Fetching subnet data...', 'success');
+
+                // Get current block number (without fetching full block to avoid extrinsic issues)
+                const header = await api.rpc.chain.getHeader();
+                displayData('Current Block', {
+                    number: header.number.toNumber(),
+                    hash: header.hash.toString()
+                });
+
+                // Get subnet hyperparameters
+                const subnetExists = await api.query.subtensorModule.networksAdded(netuid);
+                if (!subnetExists.toHuman()) {
+                    showStatus(`Subnet ${netuid} does not exist`, 'error');
+                    return;
+                }
+
+                displayData('Subnet Exists', { netuid, exists: true });
+
+                // Get number of UIDs in subnet
+                const subnetN = await api.query.subtensorModule.subnetworkN(netuid);
+                const numUIDs = subnetN.toNumber();
+                displayData('Subnet Size', { netuid, totalUIDs: numUIDs });
+
+                // Get metagraph data for all UIDs
+                showStatus(`Discovering available queries...`, 'info');
+                
+                // Log all available queries
+                const availableQueries = Object.keys(api.query.subtensorModule);
+                console.log('Available subtensorModule queries:', availableQueries);
+                displayData('Available Queries', availableQueries);
+                
+                showStatus(`Fetching data for ${numUIDs} UIDs...`, 'info');
+                
+                const metagraphData = [];
+                
+                for (let uid = 0; uid < Math.min(numUIDs, 50); uid++) { // Increased to 50 UIDs
+                    try {
+                        // Get hotkey for this UID
+                        const hotkey = await api.query.subtensorModule.keys(netuid, uid);
+                        const hotkeyStr = hotkey.toString();
+                        
+                        // Get emission for this specific UID in this netuid
+                        const emissionRaw = await api.query.subtensorModule.emission(uid);
+                        const emissionArray = emissionRaw.toJSON();
+                        const emission = emissionArray[netuid] || 0;
+                        
+                        const neuronData = {
+                            uid,
+                            netuid,
+                            hotkey: hotkeyStr,
+                            emission: (emission / 1e9).toFixed(9), // Convert from rao to TAO
+                        };
+                        
+                        // Try each query individually and log results
+                        
+                        // Axon
+                        if (availableQueries.includes('axons')) {
+                            try {
+                                const axonRaw = await api.query.subtensorModule.axons(netuid, uid);
+                                neuronData.axon = axonRaw.toJSON();
+                            } catch (e) {
+                                console.log(`UID ${uid} - Axon error:`, e.message);
+                                neuronData.axon = `Error: ${e.message}`;
+                            }
+                        }
+                        
+                        // Incentive
+                        if (availableQueries.includes('incentive')) {
+                            try {
+                                const incentiveRaw = await api.query.subtensorModule.incentive(uid);
+                                const incentiveArray = incentiveRaw.toJSON();
+                                const incentiveValue = incentiveArray[netuid] || 0;
+                                neuronData.incentive = (incentiveValue / 65535).toFixed(6);
+                            } catch (e) {
+                                console.log(`UID ${uid} - Incentive error:`, e.message);
+                            }
+                        }
+                        
+                        // Dividends
+                        if (availableQueries.includes('dividends')) {
+                            try {
+                                const dividendsRaw = await api.query.subtensorModule.dividends(uid);
+                                const dividendsArray = dividendsRaw.toJSON();
+                                const dividendsValue = dividendsArray[netuid] || 0;
+                                neuronData.dividends = (dividendsValue / 65535).toFixed(6);
+                            } catch (e) {
+                                console.log(`UID ${uid} - Dividends error:`, e.message);
+                            }
+                        }
+                        
+                        // Consensus
+                        if (availableQueries.includes('consensus')) {
+                            try {
+                                const consensusRaw = await api.query.subtensorModule.consensus(uid);
+                                const consensusArray = consensusRaw.toJSON();
+                                const consensusValue = consensusArray[netuid] || 0;
+                                neuronData.consensus = (consensusValue / 65535).toFixed(6);
+                            } catch (e) {
+                                console.log(`UID ${uid} - Consensus error:`, e.message);
+                            }
+                        }
+                        
+                        // Trust
+                        if (availableQueries.includes('trust')) {
+                            try {
+                                const trustRaw = await api.query.subtensorModule.trust(uid);
+                                const trustArray = trustRaw.toJSON();
+                                const trustValue = trustArray[netuid] || 0;
+                                neuronData.trust = (trustValue / 65535).toFixed(6);
+                            } catch (e) {
+                                console.log(`UID ${uid} - Trust error:`, e.message);
+                            }
+                        }
+                        
+                        // Rank
+                        if (availableQueries.includes('rank')) {
+                            try {
+                                const rankRaw = await api.query.subtensorModule.rank(uid);
+                                const rankArray = rankRaw.toJSON();
+                                const rankValue = rankArray[netuid] || 0;
+                                neuronData.rank = (rankValue / 65535).toFixed(6);
+                            } catch (e) {
+                                console.log(`UID ${uid} - Rank error:`, e.message);
+                            }
+                        }
+                        
+                        // Validator permit
+                        if (availableQueries.includes('validatorPermit')) {
+                            try {
+                                const permitRaw = await api.query.subtensorModule.validatorPermit(uid);
+                                const permitArray = permitRaw.toJSON();
+                                neuronData.validatorPermit = permitArray[netuid] || false;
+                            } catch (e) {
+                                console.log(`UID ${uid} - ValidatorPermit error:`, e.message);
+                            }
+                        }
+                        
+                        // Active status
+                        if (availableQueries.includes('active')) {
+                            try {
+                                const activeRaw = await api.query.subtensorModule.active(uid);
+                                const activeArray = activeRaw.toJSON();
+                                neuronData.active = activeArray[netuid] || false;
+                            } catch (e) {
+                                console.log(`UID ${uid} - Active error:`, e.message);
+                            }
+                        }
+                        
+                        // Last update
+                        if (availableQueries.includes('lastUpdate')) {
+                            try {
+                                const lastUpdateRaw = await api.query.subtensorModule.lastUpdate(uid);
+                                const lastUpdateArray = lastUpdateRaw.toJSON();
+                                neuronData.lastUpdate = lastUpdateArray[netuid] || 0;
+                            } catch (e) {
+                                console.log(`UID ${uid} - LastUpdate error:`, e.message);
+                            }
+                        }
+                        
+                        metagraphData.push(neuronData);
+                        
+                        // Only log first one for debugging
+                        if (uid === 0) {
+                            console.log('First neuron data:', neuronData);
+                        }
+                        
+                    } catch (error) {
+                        console.error(`Error fetching UID ${uid}:`, error);
+                        metagraphData.push({
+                            uid,
+                            error: error.message
+                        });
+                    }
+                    
+                    // Update status every 10 UIDs
+                    if ((uid + 1) % 10 === 0 || uid === Math.min(numUIDs, 50) - 1) {
+                        showStatus(`Fetched ${uid + 1}/${Math.min(numUIDs, 50)} UIDs...`, 'info');
+                    }
+                }
+
+                displayData(`Metagraph Data (${metagraphData.length} neurons)`, metagraphData);
+                showStatus('Data fetch complete!', 'success');
+
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                connectBtn.disabled = false;
+                if (api) {
+                    await api.disconnect();
+                }
+            }
+        }
+
+        document.getElementById('connectBtn').addEventListener('click', connectAndFetch);
+    </script>
+</body>
+</html>

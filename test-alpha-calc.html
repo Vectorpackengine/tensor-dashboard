@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Alpha Value Calculation Test</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+    <h1>Alpha Value Calculation Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Test the alpha value calculation
+        const globalAlphaPrice = 0.004803; // Example alpha price
+        const testEmission = 1000000000; // 1 TAO in nano units
+        const emission = parseFloat(testEmission) / 1e9; // Convert to TAO
+        const alphaValue = globalAlphaPrice * emission;
+        
+        document.getElementById('results').innerHTML = `
+            <p>Alpha Price: $${globalAlphaPrice.toFixed(6)}</p>
+            <p>Emission (nano): ${testEmission}</p>
+            <p>Emission (TAO): ${emission.toFixed(4)}</p>
+            <p>Alpha Value: $${alphaValue.toFixed(6)}</p>
+        `;
+    </script>
+</body>
+</html>

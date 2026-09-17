@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Alpha Price Test</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+    <h1>Alpha Price Test</h1>
+    <div id="alpha-price">Loading...</div>
+    
+    <script>
+        async function testAlphaPrice() {
+            try {
+                const response = await fetch('/api/alpha-price');
+                const result = await response.json();
+                const price = parseFloat(result.data[0].price);
+                document.getElementById('alpha-price').textContent = `Alpha Price: $${price.toFixed(6)}`;
+            } catch (error) {
+                document.getElementById('alpha-price').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        testAlphaPrice();
+    </script>
+</body>
+</html>
